@@ -27,9 +27,22 @@ set -euo pipefail
 
 [ -z "${DEBUG+x}" ] || set -x
 
+name="$(echo "$(basename "${0}" | tr - ' ')")"
+
 function die {
 	>&2 echo "${1:-UNKNOWN ERROR}"
+	>&2 echo "Use \"${name} -h\" or \"${name} help\" to get available options."
 	exit 1
+}
+
+function usage {
+	>&2 echo "Usage:"
+	>&2 echo -e "\t${name} [ -n namespace ]"
+	>&2 echo
+	>&2 echo -e "\t-n namespace: Namespace from which to display the deployer token."
+	>&2 echo -e "\t              Displays deployer token from current namespace it not"
+	>&2 echo -e "\t              specified."
+	exit 0;
 }
 
 NS=""
@@ -41,6 +54,8 @@ while (( "${#}" )); do
 			NS="${2}"
 			shift
 		;;
+		"help") usage;;
+		"-h") usage;;
 		*)
 			die "Unexpected argument on commandline: \"${1}\"."
 		;;
