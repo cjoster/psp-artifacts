@@ -116,8 +116,13 @@ rules:
   resourceNames:
   - ${psp_name}
 - apiGroups: ['']
+  resources: ['serviceaccounts']
+  verbs:     ['use']
+  resourceNames:
+  - runner
+- apiGroups: ['']
   resources: ['pods']
-  verbs:     ['get','create','list','delete','watch','update']
+  verbs:     ['get','list','delete','watch']
 - apiGroups: ['']
   resources: ['events']
   verbs:     ['list']
