@@ -41,13 +41,15 @@ function usage {
 	>&2 echo -e "\t( -n namespace | --namespace=namespace ) [ --no-verify-ca ]"
 	>&2 echo -e "\t--token=token https://cluster-url:port"
 	>&2 echo
-	>&2 echo -e "\t--name: Friendly (arbitrary) name of the cluster into to which you want to"
-	>&2 echo -e "\t        login. Used to construct the cluster context name and credential name."
-	>&2 echo -e "\t--namespace: The namespace in which this deployer service account exists."
-	>&2 echo -e "\t--ca-file: A file containing the CA certificate for the cluster."
-	>&2 echo -e "\t--extract-ca: Extracts the certificate authority from the cluster rather than supplying it on the command line."
-	>&2 echo -e "\t--no-verify-ca: Does not present the CA certificate extracted with --extract-ca to the user for verification."
-	>&2 echo -e "\t--token: The service account token provided to you by your cluster administrator."
+	>&2 echo -e "\t--name        : Friendly (arbitrary) name of the cluster into to which you want to"
+	>&2 echo -e "\t                login. Used to construct the cluster context name and credential name."
+	>&2 echo -e "\t--namespace   : The namespace in which this deployer service account exists."
+	>&2 echo -e "\t--ca-file     : A file containing the CA certificate for the cluster."
+	>&2 echo -e "\t--extract-ca  : Extracts the certificate authority from the cluster rather than"
+	>&2 echo -e "\t                supplying it on the command line."
+	>&2 echo -e "\t--no-verify-ca: Does not present the CA certificate extracted with --extract-ca to"
+	>&2 echo -e "\t                the user for verification."
+	>&2 echo -e "\t--token       : The service account token provided to you by your cluster administrator."
 	
 	exit 0
 }
