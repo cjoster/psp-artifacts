@@ -94,12 +94,14 @@ Example output is:
     
     eyJhbGciOiJSUzI1NiIsImtpZCI6InBPYWZoak9WaDhCaVdUN3NaU....
 
-	Usage:
-		kubectl getdeployertoken [ -n namespace ]
+Help output is available also with `-h` or `help`:
 
-		-n namespace: Namespace from which to display the deployer token.
-			      Displays deployer token from current namespace it not
-			      specified.
+    Usage:
+        kubectl getdeployertoken [ -n namespace ]
+        
+        -n namespace: Namespace from which to display the deployer token.
+        Displays deployer token from current namespace it not
+        specified.
 
 # kubectl-rotatetokens
 
@@ -127,30 +129,32 @@ this command:
 
 It is strongly recommended that you not do this.
 
-	Usage:
-		kubectl rotatetokens ( service-account-name | --all ) [ -n namespace ]
+Help output is available also with `-h` or `help`:
 
-		service-account-name: Name of service account whose token is to be rotated.
-		-n namespace        : Namespace in which to rotate service-account-names's token.
-		--all               : Rotate all tokens in the specified namespace. Rotates all
-				      tokens in the current namespace if -n is not specified.
+    Usage:
+        kubectl rotatetokens ( service-account-name | --all ) [ -n namespace ]
+        
+        service-account-name: Name of service account whose token is to be rotated.
+        -n namespace        : Namespace in which to rotate service-account-names's token.
+        --all               : Rotate all tokens in the specified namespace. Rotates all
+                              tokens in the current namespace if -n is not specified.
 
 # kubectl-login
 
 Kubectl plugin intended to automate the population of a local kubeconfig
 file with the deployer token for a given namespace.
 
-	Usage:
-		kubectl login --name=clustername ( --ca-file=ca.crt | --extract-ca )
-		( -n namespace | --namespace=namespace ) [ --no-verify-ca ]
-		--token=token https://cluster-url:port
-
-		--name        : Friendly (arbitrary) name of the cluster into to which you want to
-				login. Used to construct the cluster context name and credential name.
-		--namespace   : The namespace in which this deployer service account exists.
-		--ca-file     : A file containing the CA certificate for the cluster.
-		--extract-ca  : Extracts the certificate authority from the cluster rather than
-				supplying it on the command line.
-		--no-verify-ca: Does not present the CA certificate extracted with --extract-ca to
-				the user for verification.
-		--token       : The service account token provided to you by your cluster administrator.
+    Usage:
+        kubectl login --name=clustername ( --ca-file=ca.crt | --extract-ca )
+        ( -n namespace | --namespace=namespace ) [ --no-verify-ca ]
+        --token=token https://cluster-url:port
+        
+        --name        : Friendly (arbitrary) name of the cluster into to which you want to
+                        login. Used to construct the cluster context name and credential name.
+        --namespace   : The namespace in which this deployer service account exists.
+        --ca-file     : A file containing the CA certificate for the cluster.
+        --extract-ca  : Extracts the certificate authority from the cluster rather than
+                        supplying it on the command line.
+        --no-verify-ca: Does not present the CA certificate extracted with --extract-ca to
+                        the user for verification.
+        --token       : The service account token provided to you by your cluster administrator.
