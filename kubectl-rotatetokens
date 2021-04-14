@@ -1,0 +1,76 @@
+#!/bin/bash
+
+###########################################################################
+#   kubectl-rotatetokens                                                  #
+#                                                                         #
+#     A kubectl plugin to rotate service account tokens in a given        #
+#     namespace.                                                          #
+#                                                                         #
+# Copyright (C) 2021 CJ Oster (ocj@vmware.com)                            #
+#                                                                         #
+# This program is free software: you can redistribute it and/or modify    #
+# it under the terms of the GNU Lesser General Public License as          #
+# published by the Free Software Foundation, either version 3 of the      #
+# License, or (at your option) any later version.                         #
+#                                                                         #
+# This program is distributed in the hope that it will be useful, but     #
+# WITHOUT ANY WARRANTY; without even the implied warranty of              #
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser #
+# General Public License for more details.                                #
+#                                                                         #
+# You should have received a copy of the GNU Lesser General Public        #
+# License along with this program. If not, see                            #
+# <https://www.gnu.org/licenses/>.                                        #
+###########################################################################
+
+set -euo pipefail
+
+[ -z "${DEBUG+x}" ] || set -x
+
+function die {
+	>&2 echo "${1:-UNKNOWN ERROR}"
+	exit 1
+}
+
+SA=""
+NS=""
+while (( "${#}" )); do
+	case "${1}" in
+		"-n")
+			[ -z "${NS}" ] || die "Namespace cannot be specified more than once."
+			[ -n "${2:-}" ] || die "Namespace required for \"-n\" argument."
+			NS="${2}"
+			shift
+		;;
+		*)
+			[ -z "${SA}" ] || die "Unexpected argument \"${1}\" on command line."
+			SA="${1}"
+		;;
+	esac
+	shift
+done
+
+[ -z "${NS}" -a -z "${SA}" ] && die "Parameters expected. Use \"-h\" to get a list of available options."
+NSc=""
+[ -z "${NS}" ] || NSc="-n ${NS}"
+
+if [ -n "${SA}" ]; then
+	kubectl get serviceaccount "${SA}" ${NSc} > /dev/null 2>&1 || die \
+		"ServiceAccount \"${SA}\" does not exist or you do not have permission to read them."
+	token="$(kubectl get secret --no-headers ${NSc} | awk "{if(\$1 ~ /^${SA}-token-/ && \$2==\"kubernetes.io/service-account-token\"){print \$1}}" 2>/dev/null)"
+	[ -n "${token}" ] || die "No service account token found for \"${SA}\"."
+	kubectl delete secret "${token}" ${NSc} || die "Could not rotate service account token for \"${SA}\"."
+	exit 0
+fi
+
+if [ -n "${NS}" ]; then
+	tokens="$(kubectl get secrets ${NSc} --no-headers 2>/dev/null| awk '{if($2 == "kubernetes.io/service-account-token"){print $1}}' 2>/dev/null)" || \
+		die "No service account tokens found."
+	for t in ${tokens}; do
+		kubectl delete secret "${t}" ${NSc} || true
+	done
+
+	exit 0;
+fi
+
+die "Nothing to do."
