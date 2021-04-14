@@ -144,10 +144,11 @@ Help output is available also with `-h` or `help`:
 Kubectl plugin intended to automate the population of a local kubeconfig
 file with the deployer token for a given namespace.
 
+Help output is available also with `-h` or `help`:
+
     Usage:
         kubectl login --name=clustername ( --ca-file=ca.crt | --extract-ca )
-        ( -n namespace | --namespace=namespace ) [ --no-verify-ca ]
-        --token=token https://cluster-url:port
+        --namespace=namespace [ --no-verify-ca ] --token=token http://cluster-url:port
         
         --name        : Friendly (arbitrary) name of the cluster into to which you want to
                         login. Used to construct the cluster context name and credential name.
@@ -158,3 +159,4 @@ file with the deployer token for a given namespace.
         --no-verify-ca: Does not present the CA certificate extracted with --extract-ca to
                         the user for verification.
         --token       : The service account token provided to you by your cluster administrator.
+        
