@@ -70,6 +70,13 @@ Invokation is simple:
 
     kubectl createns mynamespace
 
+	Usage:
+		kubectl createns namespace [ --fixup ]
+
+		namespace: Name of the namespace to create
+		--fixup  : Attempt to deploy/modify ServiceAccounts, Roles,
+			 : and rolebindings even if namespace already exists.
+
 # kubectl-getdeployertoken
 
 Kubernetes plugin intended to simplify obtaining the deployer token
@@ -84,6 +91,13 @@ Example output is:
        YOUR DEPLOYER TOKEN IS:
     
     eyJhbGciOiJSUzI1NiIsImtpZCI6InBPYWZoak9WaDhCaVdUN3NaU....
+
+	Usage:
+		kubectl getdeployertoken [ -n namespace ]
+
+		-n namespace: Namespace from which to display the deployer token.
+			      Displays deployer token from current namespace it not
+			      specified.
 
 # kubectl-rotatetokens
 
@@ -110,6 +124,14 @@ this command:
         kubectl rotatetokens -n "${ns}" --all; done
 
 It is strongly recommended that you not do this.
+
+	Usage:
+		kubectl rotatetokens ( service-account-name | --all ) [ -n namespace ]
+
+		service-account-name: Name of service account whose token is to be rotated.
+		-n namespace        : Namespace in which to rotate service-account-names's token.
+		--all               : Rotate all tokens in the specified namespace. Rotates all
+				      tokens in the current namespace if -n is not specified.
 
 # kubectl-login
 
