@@ -37,8 +37,8 @@ function die {
 
 function usage {
 	>&2 echo "Usage:"
-	>&2 echo -e "\t${name} --name=clustername ( --ca-file=ca.crt | --extract-ca )"
-	>&2 echo -e "\t--namespace=namespace [ --no-verify-ca ] --token=token http://cluster-url:port"
+	>&2 echo -e "\t${name} --name=clustername [ --ca-file=ca.crt | --extract-ca [ --no-verify-ca ] ]"
+	>&2 echo -e "\t--namespace=namespace --token=token [ http://cluster-url:port ]"
 	>&2 echo
 	>&2 echo -e "\t--name        : Friendly (arbitrary) name of the cluster into to which you want to"
 	>&2 echo -e "\t                login. Used to construct the cluster context name and credential name."
@@ -49,6 +49,8 @@ function usage {
 	>&2 echo -e "\t--no-verify-ca: Does not present the CA certificate extracted with --extract-ca to"
 	>&2 echo -e "\t                the user for verification."
 	>&2 echo -e "\t--token       : The service account token provided to you by your cluster administrator."
+	>&2 echo
+	>&2 echo -e "\thttp://cluster-url:port: URL for cluster API. Optional if clustername already exists."
 	
 	exit 0
 }
@@ -70,6 +72,7 @@ reviewca=1
 clusterurl=""
 token=""
 tmpfile=""
+clusterexists=0
 while (( "${#}" )); do
 	case "${1}" in
 		"--name="*)
@@ -113,15 +116,18 @@ done
 [ -n "${namespace}" ] || die "Must specify the namespace with \"--namespace\"."
 [ -n "${clustername}" ] || die "Must specify the cluster name with \"--name\"."
 [ -n "${token}" ] || die "Must specify token for the service account with \"--token\"."
-[ -n "${clusterurl}" ] || die "Must specify cluster URL on command line."
 [ "${extractca}" -eq "1" ] || [ -r "${cafile}" ] || die "CA file \"${cafile}\" does not exist or is not readable."
+
+if [ ! -z "$(kubectl config get-clusters | tail -n+2 | awk "{if(\$1==\"${clustername}\"){print \$1}}")" ]; then
+	clusterexists=1
+fi
+
+[ -n "${clusterurl}" -o "${clusterexists}" -eq "1" ] || die "Must specify cluster URL on command line."
 
 [ -z "$(kubectl config get-contexts --no-headers | grep -E "^\*?[[:space:]]+${clustername}-deployer[[:space:]]" || true)" ] ||
 	die "Context \"${clustername}-deployer\" already exists. Refusing to continue. Use \"kubectl config delete-context\" or \"kubectl config rename-context\" to continue."
 
-if [ ! -z "$(kubectl config get-clusters | tail -n+2 | awk "{if(\$1==\"${clustername}\"){print \$1}}")" ]; then
-	2>&1 echo "Cluster \"${clustername}\" already exists. Leaving alone."
-else
+if [ "${clusterexists}" -eq 0 ]; then
 	if [ "${extractca}" -eq "1" ]; then
 		tmpfile="$(mktemp /tmp/kubectl-login.XXXXXX)" || die "Could not create temporary file for CA extraction."
 		host="$(echo "${clusterurl}" | sed -ne 's|https://||p' | sed -e 's|/.*||')"
@@ -153,6 +159,6 @@ else
 fi
 
 kubectl config set-credentials "${clustername}:${namespace}:deployer" --token="${token}" || die "Could not configure credential object."
-kubectl config set-context "${clustername}-deployer" --cluster="${clustername}"
-kubectl config set-context "${clustername}-deployer" --user="${clustername}:${namespace}:deployer"
-kubectl config use-context "${clustername}-deployer"
+kubectl config set-context "${clustername}-${namespace}-deployer" --cluster="${clustername}"
+kubectl config set-context "${clustername}-${namespace}-deployer" --user="${clustername}:${namespace}:deployer"
+kubectl config use-context "${clustername}-${namespace}-deployer"
