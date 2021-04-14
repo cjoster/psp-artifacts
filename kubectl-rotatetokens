@@ -27,50 +27,66 @@ set -euo pipefail
 
 [ -z "${DEBUG+x}" ] || set -x
 
+name="$(echo "$(basename "${0}" | tr - ' ')")"
+
 function die {
 	>&2 echo "${1:-UNKNOWN ERROR}"
+	>&2 echo "Use \"${name} -h\" or \"${name} help\" to get available options."
 	exit 1
 }
 
-SA=""
-NS=""
+function usage {
+	>&2 echo "Usage:"
+	>&2 echo -e "\t${name} ( service-account-name | --all ) [ -n namespace ]"
+	>&2 echo
+	>&2 echo -e "\tservice-account-name: Name of service account whose token is to be rotated."
+	>&2 echo -e "\t-n namespace        : Namespace in which to rotate service-account-names's token."
+	>&2 echo -e "\t--all               : Rotate all tokens in the specified namespace. Rotates all"
+	>&2 echo -e "\t                      tokens in the current namespace if -n is not specified."
+	exit 0
+}
+
+sa=""
+ns=""
+all=0
 while (( "${#}" )); do
 	case "${1}" in
 		"-n")
-			[ -z "${NS}" ] || die "Namespace cannot be specified more than once."
+			[ -z "${ns}" ] || die "Namespace cannot be specified more than once."
 			[ -n "${2:-}" ] || die "Namespace required for \"-n\" argument."
-			NS="${2}"
+			ns="${2}"
 			shift
 		;;
+		"help") usage ;;
+		"-h") usage ;;
+		"--all")
+			all=1
+		;;
 		*)
-			[ -z "${SA}" ] || die "Unexpected argument \"${1}\" on command line."
-			SA="${1}"
+			[ -z "${sa}" ] || die "Unexpected argument \"${1}\" on command line."
+			sa="${1}"
 		;;
 	esac
 	shift
 done
 
-[ -z "${NS}" -a -z "${SA}" ] && die "Parameters expected. Use \"-h\" to get a list of available options."
-NSc=""
-[ -z "${NS}" ] || NSc="-n ${NS}"
+[ -z "${sa}" -a "${all}" -eq "0" ] && die "Cannot rotate all tokens without \"--all\" option."
+[ -n "${sa}" -a "${all}" -eq "1" ] && die "Cannot specify a resource and \"--all\" at the same time."
+nsc=""
+[ -z "${ns}" ] || NSc="-n ${ns}"
 
-if [ -n "${SA}" ]; then
-	kubectl get serviceaccount "${SA}" ${NSc} > /dev/null 2>&1 || die \
-		"ServiceAccount \"${SA}\" does not exist or you do not have permission to read them."
-	token="$(kubectl get secret --no-headers ${NSc} | awk "{if(\$1 ~ /^${SA}-token-/ && \$2==\"kubernetes.io/service-account-token\"){print \$1}}" 2>/dev/null)"
-	[ -n "${token}" ] || die "No service account token found for \"${SA}\"."
-	kubectl delete secret "${token}" ${NSc} || die "Could not rotate service account token for \"${SA}\"."
-	exit 0
-fi
-
-if [ -n "${NS}" ]; then
-	tokens="$(kubectl get secrets ${NSc} --no-headers 2>/dev/null| awk '{if($2 == "kubernetes.io/service-account-token"){print $1}}' 2>/dev/null)" || \
+if [ -n "${sa}" ]; then
+	kubectl get serviceaccount "${sa}" ${nsc} > /dev/null 2>&1 || die \
+		"ServiceAccount \"${sa}\" does not exist or you do not have permission to read them."
+	token="$(kubectl get secret --no-headers ${nsc} | awk "{if(\$1 ~ /^${sa}-token-/ && \$2==\"kubernetes.io/service-account-token\"){print \$1}}" 2>/dev/null)"
+	[ -n "${token}" ] || die "No service account token found for \"${sa}\"."
+	kubectl delete secret "${token}" ${nsc} || die "Could not rotate service account token for \"${sa}\"."
+elif [ "${all}" -eq "1" ]; then
+	tokens="$(kubectl get secrets ${nsc} --no-headers 2>/dev/null| awk '{if($2 == "kubernetes.io/service-account-token"){print $1}}' 2>/dev/null)" || \
 		die "No service account tokens found."
 	for t in ${tokens}; do
-		kubectl delete secret "${t}" ${NSc} || true
+		kubectl delete secret "${t}" ${nsc} || true
 	done
-
-	exit 0;
 fi
 
-die "Nothing to do."
+exit 0
