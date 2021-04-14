@@ -147,8 +147,8 @@ file with the deployer token for a given namespace.
 Help output is available also with `-h` or `help`:
 
     Usage:
-        kubectl login --name=clustername ( --ca-file=ca.crt | --extract-ca )
-        --namespace=namespace [ --no-verify-ca ] --token=token http://cluster-url:port
+        kubectl login --name=clustername [ --ca-file=ca.crt | --extract-ca [ --no-verify-ca ] ]
+        --namespace=namespace --token=token [ http://cluster-url:port ]
         
         --name        : Friendly (arbitrary) name of the cluster into to which you want to
                         login. Used to construct the cluster context name and credential name.
@@ -160,3 +160,4 @@ Help output is available also with `-h` or `help`:
                         the user for verification.
         --token       : The service account token provided to you by your cluster administrator.
         
+        http://cluster-url:port: URL for cluster API. Optional if clustername already exists.
