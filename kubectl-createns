@@ -1,0 +1,227 @@
+#!/bin/bash
+
+###########################################################################
+#   kubectl-createns                                                      #
+#                                                                         #
+#     A kubectl plugin to create and populate a namespace with the        #
+#     appropriate deployer and runner ServiceAccounts, Roles,             #
+#     RoleBindings, and PodSecurityPolicies.
+#                                                                         #
+# Copyright (C) 2021 CJ Oster (ocj@vmware.com)                            #
+#                                                                         #
+# This program is free software: you can redistribute it and/or modify    #
+# it under the terms of the GNU Lesser General Public License as          #
+# published by the Free Software Foundation, either version 3 of the      #
+# License, or (at your option) any later version.                         #
+#                                                                         #
+# This program is distributed in the hope that it will be useful, but     #
+# WITHOUT ANY WARRANTY; without even the implied warranty of              #
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser #
+# General Public License for more details.                                #
+#                                                                         #
+# You should have received a copy of the GNU Lesser General Public        #
+# License along with this program. If not, see                            #
+# <https://www.gnu.org/licenses/>.                                        #
+###########################################################################
+
+psp_name="ourrestrictedpsp"
+
+psp_yaml="
+apiVersion: policy/v1beta1
+kind: PodSecurityPolicy
+metadata:
+  name: ${psp_name}
+  annotations:
+    seccomp.security.alpha.kubernetes.io/allowedProfileNames: 'docker/default,runtime/default'
+    apparmor.security.beta.kubernetes.io/allowedProfileNames: 'runtime/default'
+    seccomp.security.alpha.kubernetes.io/defaultProfileName:  'runtime/default'
+    apparmor.security.beta.kubernetes.io/defaultProfileName:  'runtime/default'
+spec:
+  privileged: false
+  # Required to prevent escalations to root.
+  allowPrivilegeEscalation: false
+  # This is redundant with non-root + disallow privilege escalation,
+  # but we can provide it for defense in depth.
+  requiredDropCapabilities:
+    - ALL
+  # Allow core volume types.
+  volumes:
+    - 'configMap'
+    - 'emptyDir'
+    - 'projected'
+    - 'secret'
+    - 'downwardAPI'
+    # Assume that persistentVolumes set up by the cluster admin are safe to use.
+    - 'persistentVolumeClaim'
+  hostNetwork: false
+  hostIPC: false
+  hostPID: false
+  runAsUser:
+    # Require the container to run without root privileges.
+    rule: 'MustRunAsNonRoot'
+  seLinux:
+    # This policy assumes the nodes are using AppArmor rather than SELinux.
+    rule: 'RunAsAny'
+  supplementalGroups:
+    rule: 'MustRunAs'
+    ranges:
+      # Forbid adding the root group.
+      - min: 1
+        max: 4294967294
+  fsGroup:
+    rule: 'MustRunAs'
+    ranges:
+      # Forbid adding the root group.
+      - min: 1
+        max: 4294967294
+  readOnlyRootFilesystem: false
+"
+
+runner_role_yaml="
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: runner-role
+rules:
+- apiGroups: ['policy']
+  resources: ['podsecuritypolicies']
+  verbs:     ['use']
+  resourceNames:
+  - ${psp_name}
+"
+
+runner_rolebinding_yaml="
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: runner-rolebinding
+roleRef:
+  kind: Role
+  name: runner-role
+  apiGroup: rbac.authorization.k8s.io
+subjects:
+- kind: ServiceAccount
+  name: runner
+"
+
+deployer_role_yaml="
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: deployer-role
+rules:
+- apiGroups: ['policy']
+  resources: ['podsecuritypolicies']
+  verbs:     ['use']
+  resourceNames:
+  - ${psp_name}
+- apiGroups: ['']
+  resources: ['pods']
+  verbs:     ['get','create','list','delete','watch','update']
+- apiGroups: ['']
+  resources: ['events']
+  verbs:     ['list']
+- apiGroups: ['apps']
+  resources: ['deployments','replicasets']
+  verbs:     ['get','create','list','delete','watch','update']
+"
+
+deployer_rolebinding_yaml="
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: deployer-rolebinding
+roleRef:
+  kind: Role
+  name: deployer-role
+  apiGroup: rbac.authorization.k8s.io
+subjects:
+- kind: ServiceAccount
+  name: deployer
+"
+
+set -euo pipefail
+
+[ -z "${DEBUG+x}" ] || set -x
+
+name="$(echo "$(basename "${0}" | tr - ' ')")"
+
+function die {
+	>&2 echo "${1:-UNKNOWN ERROR}"
+	>&2 echo "Use \"${name} -h\" or \"${name} help\" to get available options."
+	exit 1
+}
+
+function usage {
+	>&2 echo "Usage:"
+	>&2 echo -e "\t${name} namespace [ --fixup ]"
+	>&2 echo
+	>&2 echo -e "\tnamespace: Name of the namespace to create"
+	>&2 echo -e "\t--fixup  : Attempt to deploy/modify ServiceAccounts, Roles,"
+	>&2 echo -e "\t         : and rolebindings even if namespace already exists."
+	exit 0
+}
+
+function cleanup {
+	local ret="${?}"
+	[ "${ret}" -ne "0" ] || return;
+	>&2 echo "Unclean exit. Cleaning up..."
+	[ "${ns_created}" -eq 0 ] || kubectl delete namespace "${ns}" || true
+}
+
+ns_created=0
+deployer_created=0
+
+ns=""
+fixup="0"
+exists="0"
+while (( "${#}" )); do
+	case "${1}" in
+		"help") usage ;;
+		"-h") usage ;;
+		"--fixup")
+			fixup=1
+		;;
+		*)
+			[ -z "${ns}" ] || die "Unexpected argument \"${1}\" on command line."
+			ns="${1}"
+		;;
+	esac
+	shift
+done
+
+nsc=""
+if [ -n "${ns}" ]; then
+	testns="$(kubectl get namespaces --no-headers | awk "{if(\$1==\"${ns}\"){print \$1}}")" || die "Could not list namespaces."
+	[ -n "${testns}" -a "${fixup}" -ne 1 ] && die "Namespace \"${ns}\" already exists. Try \"--fixup\" if you want to deploy artifacts to existing namespace."
+	[ -z "${testns}" ] || exists=1
+elif [ "${fixup}" -eq "0" ]; then
+	die "Cannot apply artifacts to current namespace with \"--fixup\"."
+fi
+
+trap cleanup EXIT
+
+if [ "${exists}" -eq "0" ]; then
+	kubectl create namespace "${ns}" || err "Could not create namespace \"${NS}\"."
+	ns_created=1
+	nsc="-n ${ns}"
+fi
+
+if [ -z "$(kubectl get sa deployer ${nsc} --no-headers 2>/dev/null || true)" ]; then
+	kubectl create serviceaccount deployer ${nsc} || die "Could not create deployer service account."
+fi
+
+if [ -z "$(kubectl get sa runner ${nsc} --no-headers 2>/dev/null || true)" ]; then
+	kubectl create serviceaccount runner ${nsc} || err "Could not create runner service account."
+fi
+
+for sa in default deployer runner; do
+	kubectl patch serviceaccount "${sa}" -p '{"automountServiceAccountToken": false}'
+done
+
+echo "${psp_yaml}" | kubectl apply -f-
+
+echo "${runner_role_yaml}" | kubectl apply -f- ${nsc}
+echo "${runner_rolebinding_yaml}" | kubectl apply -f- ${nsc}
+echo "${deployer_role_yaml}" | kubectl apply -f- ${nsc}
+echo "${deployer_rolebinding_yaml}" | kubectl apply -f- ${nsc}
