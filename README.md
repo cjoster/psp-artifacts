@@ -70,12 +70,14 @@ Invokation is simple:
 
     kubectl createns mynamespace
 
-	Usage:
-		kubectl createns namespace [ --fixup ]
+Help output is available also with `-h` or `help`:
 
-		namespace: Name of the namespace to create
-		--fixup  : Attempt to deploy/modify ServiceAccounts, Roles,
-			 : and rolebindings even if namespace already exists.
+    Usage:
+        kubectl createns namespace [ --fixup ]
+        
+        namespace: Name of the namespace to create
+        --fixup  : Attempt to deploy/modify ServiceAccounts, Roles,
+        	 : and rolebindings even if namespace already exists.
 
 # kubectl-getdeployertoken
 
