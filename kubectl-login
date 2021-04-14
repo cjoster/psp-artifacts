@@ -38,8 +38,7 @@ function die {
 function usage {
 	>&2 echo "Usage:"
 	>&2 echo -e "\t${name} --name=clustername ( --ca-file=ca.crt | --extract-ca )"
-	>&2 echo -e "\t( -n namespace | --namespace=namespace ) [ --no-verify-ca ]"
-	>&2 echo -e "\t--token=token https://cluster-url:port"
+	>&2 echo -e "\t--namespace=namespace [ --no-verify-ca ] --token=token http://cluster-url:port"
 	>&2 echo
 	>&2 echo -e "\t--name        : Friendly (arbitrary) name of the cluster into to which you want to"
 	>&2 echo -e "\t                login. Used to construct the cluster context name and credential name."
