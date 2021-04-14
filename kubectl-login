@@ -1,0 +1,157 @@
+#!/bin/bash
+
+###########################################################################
+#   kubectl-login                                                         #
+#                                                                         #
+#     A kubectl plugin to login to a deployer ServiceAccount using the    #
+#     service account's authentication token.                             #
+#                                                                         #
+# Copyright (C) 2021 CJ Oster (ocj@vmware.com)                            #
+#                                                                         #
+# This program is free software: you can redistribute it and/or modify    #
+# it under the terms of the GNU Lesser General Public License as          #
+# published by the Free Software Foundation, either version 3 of the      #
+# License, or (at your option) any later version.                         #
+#                                                                         #
+# This program is distributed in the hope that it will be useful, but     #
+# WITHOUT ANY WARRANTY; without even the implied warranty of              #
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser #
+# General Public License for more details.                                #
+#                                                                         #
+# You should have received a copy of the GNU Lesser General Public        #
+# License along with this program. If not, see                            #
+# <https://www.gnu.org/licenses/>.                                        #
+###########################################################################
+
+set -euo pipefail
+
+[ -z "${DEBUG+x}" ] || set -x
+
+name="$(echo "$(basename "${0}" | tr - ' ')")"
+
+function die {
+	>&2 echo "${1:-UNKNOWN ERROR}"
+	>&2 echo "Use \"${name} -h\" or \"${name} help\" to get available options."
+	exit 1
+}
+
+function usage {
+	>&2 echo "Usage:"
+	>&2 echo -e "\t${name} --name=clustername ( --ca-file=ca.crt | --extract-ca )"
+	>&2 echo -e "\t( -n namespace | --namespace=namespace ) [ --no-verify-ca ]"
+	>&2 echo -e "\t--token=token https://cluster-url:port"
+	>&2 echo
+	>&2 echo -e "\t--name: Friendly (arbitrary) name of the cluster into to which you want to"
+	>&2 echo -e "\t        login. Used to construct the cluster context name and credential name."
+	>&2 echo -e "\t--namespace: The namespace in which this deployer service account exists."
+	>&2 echo -e "\t--ca-file: A file containing the CA certificate for the cluster."
+	>&2 echo -e "\t--extract-ca: Extracts the certificate authority from the cluster rather than supplying it on the command line."
+	>&2 echo -e "\t--no-verify-ca: Does not present the CA certificate extracted with --extract-ca to the user for verification."
+	>&2 echo -e "\t--token: The service account token provided to you by your cluster administrator."
+	
+	exit 0
+}
+
+function cleanup {
+	local ret="${?}"
+	[ ! -f "${tmpfile}" ] || rm -f "${tmpfile}"
+	[ "${ret}" -ne "0" ] || return
+}
+
+trap cleanup EXIT
+
+shopt -s extglob
+clustername=""
+namespace=""
+cafile=""
+extractca=0
+reviewca=1
+clusterurl=""
+token=""
+tmpfile=""
+while (( "${#}" )); do
+	case "${1}" in
+		"--name="*)
+			[ -z "${clustername}" ] || die "Option \"--name\" may only be specified once."
+			clustername="$(echo "${1}" | cut -d = -f2-)"
+		;;
+		"--namespace="*)
+			[ -z "${namespace}" ] || die "Namespace may not be specified more than once."
+			namespace="$(echo "${1}" | cut -d = -f2-)"
+		;;
+		"--extract-ca")
+			extractca=1
+		;;
+		"--ca-file"*)
+			[ -z "${cafile}" ] || die "Cannot specify \"--ca-file\" more than once."
+			cafile="$(echo "${1}" | cut -d = -f2-)"
+		;;
+		"--no-verify-ca")
+			reviewca=0
+		;;
+		"--token="*)
+			[ -z "${token}" ] || die "Token may not be specified more than once."
+			token="$(echo "${1}" | cut -d = -f2-)"
+		;;
+		"help") usage;;
+		"-h") usage;;
+		"--clusterurl="*)
+			[ -z "${clusterurl}" ] || die "Unexpected argument \"${1}\" on command line."
+			clusterurl="$(echo "${1}" | cut -d = -f2-)"
+		;;
+		*)
+			[ -z "${clusterurl}" ] || die "Unexpected argument \"${1}\" on command line."
+			clusterurl="${1}"
+		;;
+	esac
+	shift
+done
+
+[ -n "${cafile}" -a "${extractca}" -eq "1" ] && die "Cannot specify a CA file and \"--extract-ca\" at the same time."
+[ -n "${cafile}" -o "${extractca}" -eq "1" ] || die  "Must specify one of \"--ca-file\" or \"--extract-ca\"."
+[ -n "${namespace}" ] || die "Must specify the namespace with \"--namespace\"."
+[ -n "${clustername}" ] || die "Must specify the cluster name with \"--name\"."
+[ -n "${token}" ] || die "Must specify token for the service account with \"--token\"."
+[ -n "${clusterurl}" ] || die "Must specify cluster URL on command line."
+[ "${extractca}" -eq "1" ] || [ -r "${cafile}" ] || die "CA file \"${cafile}\" does not exist or is not readable."
+
+[ -z "$(kubectl config get-contexts --no-headers | grep -E "^\*?[[:space:]]+${clustername}-deployer[[:space:]]" || true)" ] ||
+	die "Context \"${clustername}-deployer\" already exists. Refusing to continue. Use \"kubectl config delete-context\" or \"kubectl config rename-context\" to continue."
+
+if [ ! -z "$(kubectl config get-clusters | tail -n+2 | awk "{if(\$1==\"${clustername}\"){print \$1}}")" ]; then
+	2>&1 echo "Cluster \"${clustername}\" already exists. Leaving alone."
+else
+	if [ "${extractca}" -eq "1" ]; then
+		tmpfile="$(mktemp /tmp/kubectl-login.XXXXXX)" || die "Could not create temporary file for CA extraction."
+		host="$(echo "${clusterurl}" | sed -ne 's|https://||p' | sed -e 's|/.*||')"
+		[ -n "${host}" ] || die "Unable to extract hostname from server URL \"${serverurl}\"."
+		port="$(echo "${host}" | sed -n 's/.*:\([[:digit:]]\{1,\}\).*/\1/p')"
+		[ -n "${port}" ] || host="${host}:443"
+		echo | openssl s_client -connect "${host}" 2>&1 | sed -n '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' > "${tmpfile}" || die \
+			"Could not extract CA certiicate from ${host}."
+		openssl x509 -in "${tmpfile}" > /dev/null 2>&1 || die "Extracted CA certificate does not pass x509 verification."
+		if [ "${reviewca}" -eq "1" ]; then
+			echo
+			echo "You will now be presented with the extracted certificate from the cluster at \"${clusterurl}\"."
+			echo "You are being asked to verify if this is the appropriate certificate. Press the \"q\" key to exit"
+			echo -n "the pager when done. Press any key to continue..."
+			read -n 1 ans
+			[ -z "${ans}" ] || echo
+			openssl x509 -in "${tmpfile}" -text -noout | less
+			echo
+			echo -n "Are you sure this is the certificate you wish to use? (y/N): "
+			read -n 1 ans
+			[ -z "${ans}" ] || echo
+			[ "${ans}" == "y" -o "${ans}" == "Y" ] || { >&2 echo "User aborted."; exit 0; }
+		fi
+		cafile="${tmpfile}"
+	else
+		openssl x509 -in "${cafile}" > /dev/null 2>&1 || die "CA certificate \"${cafile}\" does not pass x509 verification."
+	fi
+	kubectl config set-cluster "${clustername}" --server="${clusterurl}" --embed-certs --certificate-authority="${cafile}"
+fi
+
+kubectl config set-credentials "${clustername}:${namespace}:deployer" --token="${token}" || die "Could not configure credential object."
+kubectl config set-context "${clustername}-deployer" --cluster="${clustername}"
+kubectl config set-context "${clustername}-deployer" --user="${clustername}:${namespace}:deployer"
+kubectl config use-context "${clustername}-deployer"
