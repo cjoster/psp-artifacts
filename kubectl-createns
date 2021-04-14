@@ -128,7 +128,7 @@ rules:
   verbs:     ['list']
 - apiGroups: ['apps']
   resources: ['deployments','replicasets']
-  verbs:     ['get','create','list','delete','watch','update']
+  verbs:     ['get','create','list','delete','watch','update','patch']
 "
 
 deployer_rolebinding_yaml="
