@@ -23,8 +23,8 @@
 # Kubectl Artifacts
 
 This package contains a handful of kubectl artifacts intended to ease the
-burden on operating a kubernetes cluster with little or no authentication
-framework configured more securely.
+burden of more securely operating a kubernetes cluster with little or no authentication
+framework configured.
 
 # Installation
 
@@ -115,3 +115,18 @@ It is strongly recommended that you not do this.
 
 Kubectl plugin intended to automate the population of a local kubeconfig
 file with the deployer token for a given namespace.
+
+	Usage:
+		kubectl login --name=clustername ( --ca-file=ca.crt | --extract-ca )
+		( -n namespace | --namespace=namespace ) [ --no-verify-ca ]
+		--token=token https://cluster-url:port
+
+		--name        : Friendly (arbitrary) name of the cluster into to which you want to
+				login. Used to construct the cluster context name and credential name.
+		--namespace   : The namespace in which this deployer service account exists.
+		--ca-file     : A file containing the CA certificate for the cluster.
+		--extract-ca  : Extracts the certificate authority from the cluster rather than
+				supplying it on the command line.
+		--no-verify-ca: Does not present the CA certificate extracted with --extract-ca to
+				the user for verification.
+		--token       : The service account token provided to you by your cluster administrator.
