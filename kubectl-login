@@ -111,16 +111,18 @@ while (( "${#}" )); do
 	shift
 done
 
-[ -n "${cafile}" -a "${extractca}" -eq "1" ] && die "Cannot specify a CA file and \"--extract-ca\" at the same time."
-[ -n "${cafile}" -o "${extractca}" -eq "1" ] || die  "Must specify one of \"--ca-file\" or \"--extract-ca\"."
-[ -n "${namespace}" ] || die "Must specify the namespace with \"--namespace\"."
 [ -n "${clustername}" ] || die "Must specify the cluster name with \"--name\"."
-[ -n "${token}" ] || die "Must specify token for the service account with \"--token\"."
-[ "${extractca}" -eq "1" ] || [ -r "${cafile}" ] || die "CA file \"${cafile}\" does not exist or is not readable."
 
 if [ ! -z "$(kubectl config get-clusters | tail -n+2 | awk "{if(\$1==\"${clustername}\"){print \$1}}")" ]; then
 	clusterexists=1
 fi
+
+[ -n "${cafile}" -a "${extractca}" -eq "1" ] && die "Cannot specify a CA file and \"--extract-ca\" at the same time."
+[ -z "${cafile}" -a "${extractca}" -eq "0" -a "${clusterexists}" -eq "0" ] && die  "Must specify one of \"--ca-file\" or \"--extract-ca\"."
+[ -n "${namespace}" ] || die "Must specify the namespace with \"--namespace\"."
+[ -n "${token}" ] || die "Must specify token for the service account with \"--token\"."
+[ "${clusterexists}" -eq "1" ] || [ "${extractca}" -eq "1" ] || [ -r "${cafile}" ] || die "CA file \"${cafile}\" does not exist or is not readable."
+
 
 [ -n "${clusterurl}" -o "${clusterexists}" -eq "1" ] || die "Must specify cluster URL on command line."
 
@@ -160,5 +162,6 @@ fi
 
 kubectl config set-credentials "${clustername}:${namespace}:deployer" --token="${token}" || die "Could not configure credential object."
 kubectl config set-context "${clustername}-${namespace}-deployer" --cluster="${clustername}"
+kubectl config set-context "${clustername}-${namespace}-deployer" --namespace="${namespace}"
 kubectl config set-context "${clustername}-${namespace}-deployer" --user="${clustername}:${namespace}:deployer"
 kubectl config use-context "${clustername}-${namespace}-deployer"
