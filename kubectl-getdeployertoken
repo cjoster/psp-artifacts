@@ -1,0 +1,66 @@
+#!/bin/bash
+
+###########################################################################
+#                                                                         #
+#   kubectl-getdeployertoken                                              #
+#                                                                         #
+#      A kubectl plugin to extract the deployer token from a namespace    #
+#                                                                         #
+# Copyright (C) 2021 CJ Oster (ocj@vmware.com)                            #
+#                                                                         #
+# This program is free software: you can redistribute it and/or modify    #
+# it under the terms of the GNU Lesser General Public License as          #
+# published by the Free Software Foundation, either version 3 of the      #
+# License, or (at your option) any later version.                         #
+#                                                                         #
+# This program is distributed in the hope that it will be useful, but     #
+# WITHOUT ANY WARRANTY; without even the implied warranty of              #
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser #
+# General Public License for more details.                                #
+#                                                                         #
+# You should have received a copy of the GNU Lesser General Public        #
+# License along with this program. If not, see                            #
+# <https://www.gnu.org/licenses/>.                                        #
+###########################################################################
+
+set -euo pipefail
+
+[ -z "${DEBUG+x}" ] || set -x
+
+function die {
+	>&2 echo "${1:-UNKNOWN ERROR}"
+	exit 1
+}
+
+NS=""
+while (( "${#}" )); do
+	case "${1}" in
+		"-n")
+			[ -z "${NS}" ] || die "Namespace cannot be specified more than once."
+			[ -n "${2:-}" ] || die "Namespace required for \"-n\" argument"
+			NS="${2}"
+			shift
+		;;
+		*)
+			die "Unexpected argument on commandline: \"${1}\"."
+		;;
+	esac
+	shift
+done
+
+NSc=""
+[ -z "${NS}" ] || NSc="-n ${NS}"
+
+secret="$(kubectl get secrets ${NSc} --no-headers | awk "{if(\$1 ~ /^deployer-token-/ && \$2==\"kubernetes.io/service-account-token\"){print \$1}}" 2>/dev/null)" || \
+	die "Unable to list secrets."
+[ -n "${secret}" ] || die "Could not get deployer token secret name or namespace does not have a deployer."
+token="$(kubectl get secret "${secret}" -o yaml 2>/dev/null | grep -E '^[[:space:]]{2}token: ' | sed -e 's/^[[:space:]]*token: //' | base64 -d)" || \
+	die "Unable to extract token from secret."
+[ -n "${token}" ] || die "Cannot get deployer token."
+
+echo
+echo "   YOUR DEPLOYER TOKEN IS:"
+echo
+echo "${token}"
+echo
+
