@@ -26,6 +26,19 @@ This package contains a handful of kubectl artifacts intended to ease the
 burden of more securely operating a kubernetes cluster with little or no authentication
 framework configured.
 
+# psp.yaml
+
+To install the PodSecurityPolicy, run the following command:
+
+    kubectl apply -f psp.yaml
+
+If you wish to change the name of the pod security policy, do so with this command:
+
+    sed -e s/restricted/NEW-PSP-NAME/ psp.yaml | kubectl apply -f -
+
+If you change the name of the PSP, you will need to manually edit the
+`kubectl-createns` plugin to reference the correct PodSecurityPolicy name.
+
 # Installation
 
 Each of the kubectl plugins in this directory need to be installed into
