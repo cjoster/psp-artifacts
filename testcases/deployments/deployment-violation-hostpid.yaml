@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: deployment-violation-hostpid
+spec:
+  selector:
+    matchLabels:
+      app: deployment-violation-hostpid
+  replicas: 3
+  template:
+    metadata:
+      labels:
+        app: deployment-violation-hostpid
+    spec:
+      serviceAccountName: runner
+      hostPID: true
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 3000
+      containers:
+      - name: pause
+        image: k8s.gcr.io/pause
+        securityContext:
+          allowPrivilegeEscalation: false
+          privileged: false

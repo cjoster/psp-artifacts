@@ -20,39 +20,7 @@
 ###########################################################################
 -->
 
-# Kubectl Artifacts
+# Roles and RoleBindings
 
-This package contains a handful of kubectl artifacts intended to ease the
-burden of more securely operating a kubernetes cluster with little or no authentication
-framework configured.
-
-# Installation
-
-Each of the kubectl plugins in this directory need to be installed into
-a directory in your searchpath ($PATH) to be usable. An example
-installation command is:
-
-    mkdir -p ~/bin && cp bin/kubectl-* ~/bin/
-
-If ~/bin is not in your search path, it can be added with the following:
-
-    export PATH=$PATH:~/bin
-
-Lastly, if you wish to make this addition to your search path stick
-between sessions, you can persist it with:
-
-    echo "PATH=\$PATH:~/bin" >> ~/.profile
-
-# Invocation
-
-All of the plugins created here can be run in debug mode by simply
-exporting the environment variable DEBUG to any value.
-
-    export DEBUG=1
-
-Alternatively, it can be turned on for a single run of the command by
-specifying environment variables in the normal fasion:
-
-    DEBUG=1 kubectl getdeployertoken
-
-Furthur docmentation can be found in the bin directory.
+These are the yaml templates that are used to create the role and
+rolebindings in kubectl-createns.

@@ -1,6 +1,6 @@
 ###########################################################################
 # Various Kubectl Artifacts (kubectl-login, kubectl-createns,             #
-#    kubectl-rotatetokens, kubectl-getdeployertoken)                      #
+#    kubectlrotatetokens, kubectl-getdeployertoken)                      #
 # Copyright (C) 2021 CJ Oster (ocj@vmware.com)                            #
 #                                                                         #
 # This program is free software: you can redistribute it and/or modify    #

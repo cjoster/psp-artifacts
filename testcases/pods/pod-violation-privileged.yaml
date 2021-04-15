@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pod-violation-privileged
+spec:
+  hostPID: false
+  containers:
+  - name:  pause
+    image: k8s.gcr.io/pause
+    securityContext:
+      privileged: true
+      runAsUser: 1000
+      runAsGroup: 3000

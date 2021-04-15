@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: deployment-violation-root
+spec:
+  selector:
+    matchLabels:
+      app: deployment-violation-root
+  replicas: 3
+  template:
+    metadata:
+      labels:
+        app: deployment-violation-root
+    spec:
+      serviceAccountName: runner
+      hostPID: false
+      securityContext:
+        runAsUser: 0
+        runAsGroup: 0
+        fsGroup: 3000
+      containers:
+      - name: pause
+        image: k8s.gcr.io/pause
+        securityContext:
+          allowPrivilegeEscalation: false
+          privileged: false
