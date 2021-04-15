@@ -23,6 +23,8 @@
 # <https://www.gnu.org/licenses/>.                                        #
 ###########################################################################
 
+deployer_sa_name="deployer"
+
 set -euo pipefail
 
 [ -z "${DEBUG+x}" ] || set -x
@@ -66,7 +68,7 @@ done
 nsc=""
 [ -z "${ns}" ] || nsc="-n ${ns}"
 
-secret="$(kubectl get secrets ${nsc} --no-headers | awk "{if(\$1 ~ /^deployer-token-/ && \$2==\"kubernetes.io/service-account-token\"){print \$1}}" 2>/dev/null)" || \
+secret="$(kubectl get secrets ${nsc} --no-headers | awk "{if(\$1 ~ /^${deployer_sa_name}-token-/ && \$2==\"kubernetes.io/service-account-token\"){print \$1}}" 2>/dev/null)" || \
 	die "Unable to list secrets."
 [ -n "${secret}" ] || die "Could not get deployer token secret name or namespace does not have a deployer."
 token="$(kubectl get secret "${secret}" ${nsc} -o yaml 2>/dev/null | grep -E '^[[:space:]]{2}token: ' | sed -e 's/^[[:space:]]*token: //' | base64 -d)" || \
