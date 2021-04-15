@@ -22,7 +22,7 @@
 
 # Test Cases
 
-In the two subfolders contained in this folder are test cases that will
+In the two sub-folders contained in this folder are test cases that will
 test out the the PodSecurityPolicy.
 
 Use the `kubectl --as=...` to test these cases. You can also `kubectl login`
@@ -111,7 +111,7 @@ Verify the output:
 ## Pod-creator
 
 There is a pod-creator.yaml file that will define a service account called
-pod-creator. This sa can be used to validate the PSP by itself. The pod-creator
+pod-creator. This ServiceAccount can be used to validate the PSP by itself. The pod-creator
 is loaded like so:
 
     kubectl applyy -f pod-creator.yaml
@@ -135,7 +135,7 @@ Then you can attempt to create the pods:
 
 # Deployments
 
-The `deployer` service account shoue not be able to deploy any of the
+The `deployer` service account should not be able to deploy any of the
 pods. It *should* be able to deploy all the deployments in the `deployments`
 directory, but only the non-violating one should have pods come up.
 

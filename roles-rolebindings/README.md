@@ -23,12 +23,12 @@
 # Roles and RoleBindings
 
 These are the yaml templates that are used to create the role and
-rolebindings in kubectl-createns.
+RoleBindings in kubectl-createns.
 
 Should you wish to manually apply these roles/bindings/serviceaccounts,
 there is a file called `all-in-one.yaml` that will apply the PSP and all
 necessary artifacts in the current namespace (or whichever namespace is
-specified on the commandline with the `-n` flag). Be sure to edit the
+specified on the command-line with the `-n` flag). Be sure to edit the
 `restricted` PSP name if you've renamed the PSP. If you wish to rename
 the deployer and/or runner roles, you can do so with this:
 

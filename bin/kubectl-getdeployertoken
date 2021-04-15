@@ -59,7 +59,7 @@ while (( "${#}" )); do
 		"help") usage;;
 		"-h") usage;;
 		*)
-			die "Unexpected argument on commandline: \"${1}\"."
+			die "Unexpected argument on command line: \"${1}\"."
 		;;
 	esac
 	shift

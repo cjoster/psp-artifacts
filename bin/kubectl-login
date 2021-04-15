@@ -137,7 +137,7 @@ if [ "${clusterexists}" -eq 0 ]; then
 		port="$(echo "${host}" | sed -n 's/.*:\([[:digit:]]\{1,\}\).*/\1/p')"
 		[ -n "${port}" ] || host="${host}:443"
 		echo | openssl s_client -connect "${host}" 2>&1 | sed -n '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' > "${tmpfile}" || die \
-			"Could not extract CA certiicate from ${host}."
+			"Could not extract CA certificate from ${host}."
 		openssl x509 -in "${tmpfile}" > /dev/null 2>&1 || die "Extracted CA certificate does not pass x509 verification."
 		if [ "${reviewca}" -eq "1" ]; then
 			echo

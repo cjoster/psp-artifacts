@@ -42,7 +42,7 @@ If you change the name of the PSP, you will need to manually edit the
 # Installation
 
 Each of the kubectl plugins in this directory need to be installed into
-a directory in your searchpath ($PATH) to be usable. An example
+a directory in your search path ($PATH) to be usable. An example
 installation command is:
 
     mkdir -p ~/bin && cp bin/kubectl-* ~/bin/
@@ -64,8 +64,8 @@ exporting the environment variable DEBUG to any value.
     export DEBUG=1
 
 Alternatively, it can be turned on for a single run of the command by
-specifying environment variables in the normal fasion:
+specifying environment variables in the normal fashion:
 
     DEBUG=1 kubectl getdeployertoken
 
-Furthur docmentation can be found in the bin directory.
+Further documentation can be found in the bin directory.

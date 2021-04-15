@@ -73,7 +73,7 @@ done
 [ -z "${sa}" -a "${all}" -eq "0" ] && die "Cannot rotate all tokens without \"--all\" option."
 [ -n "${sa}" -a "${all}" -eq "1" ] && die "Cannot specify a resource and \"--all\" at the same time."
 nsc=""
-[ -z "${ns}" ] || NSc="-n ${ns}"
+[ -z "${ns}" ] || nsc="-n ${ns}"
 
 if [ -n "${sa}" ]; then
 	kubectl get serviceaccount "${sa}" ${nsc} > /dev/null 2>&1 || die \

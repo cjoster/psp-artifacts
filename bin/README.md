@@ -25,13 +25,13 @@
 This kubectl plugin is intended to automate the creation and population
 of a new namespace with 'deployer' and 'runner' service accounts. It
 configures the roles and pod-security-policies along with the
-rolebindings required to tie them all together.
+RoleBindings required to tie them all together.
 
 Currently these Roles, RoleBindings, and PodSecurityPolicies are housed
 in the script as hard-coded variables. A better mechanism to reference
 more mutable and maintainable kubernetes objects is needed.
 
-Invokation is simple:
+Invocation is simple:
 
     kubectl createns mynamespace
 
@@ -71,7 +71,7 @@ Help output is available also with `-h` or `help`:
 # kubectl-rotatetokens
 
 This kubectl plugin assists with rotating service account tokens in a
-namespace. The script does so by simply deleteing all secrets in the
+namespace. The script does so by simply deleting all secrets in the
 namespace that are of type 'kubernetes.io/service-account-token',
 causing the ServiceAccount controller to generate new tokens.
 
