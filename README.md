@@ -101,9 +101,15 @@ create deployments and ReplicaSets but not pods and utilizing the PodSecurityPol
 
 ## kubectl-getdeployertoken
 
+Determines the name of the deployer ServiceAccountToken secret, extracts the token and decodes it for
+usage.
+
 1. Obtains the deployer token from the deployer ServiceAccount for distribution to tooling or developers.
 
 ## kubectl-login
+
+Creates the necessary kubeconfig objects and linking to interact with the cluster as the
+deployer role.
 
 1. Creates a kubeconfig cluster object. (optional)
 2. Creates a kubeconfig credentials object containing the deployer ServiceAccountToken.
