@@ -118,5 +118,5 @@ Provides a mechanism to rotate ServiceAccount tokens in a namespace
 
 # External Artifacts
 
-You may find the the [kubectl-whoai](https://github.com/rajatjindal/kubectl-whoami) plugin useful
+You may find the the [kubectl-whoami](https://github.com/rajatjindal/kubectl-whoami) plugin useful
 for implementing and debugging these objects.
