@@ -115,3 +115,8 @@ create deployments and ReplicaSets but not pods and utilizing the PodSecurityPol
 Provides a mechanism to rotate ServiceAccount tokens in a namespace
 
 1. Deletes one or more ServiceAccountToken secret in a namespace.
+
+# External Artifacts
+
+You may find the the [kubectl-whoai](https://github.com/rajatjindal/kubectl-whoami) plugin useful
+for implementing and debugging these objects.
