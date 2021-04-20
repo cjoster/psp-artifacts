@@ -1,0 +1,8 @@
+kproj () 
+{ 
+    kubectl get namespaces --no-headers | grep -E "^${1:-default?}[[:space:]]" > /dev/null || { 
+        echo "No such namespace \"${1:-default}\"." 1>&2;
+        return
+    };
+    kubectl config set-context --current --namespace="${1:-default}" > /dev/null && echo "Switched to namespace \"${1:-default}\"." || echo "Could not switch namespace to \"${1:-default}\"." 1>&2
+}
