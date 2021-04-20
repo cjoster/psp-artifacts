@@ -61,11 +61,6 @@ kind: Role
 metadata:
   name: ${deployer_sa_name}-role
 rules:
-- apiGroups: ['policy']
-  resources: ['podsecuritypolicies']
-  verbs:     ['use']
-  resourceNames:
-  - ${psp_name}
 - apiGroups: ['']
   resources: ['serviceaccounts']
   verbs:     ['use']

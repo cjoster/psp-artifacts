@@ -39,11 +39,6 @@ kind: Role
 metadata:
   name: deployer-role
 rules:
-- apiGroups: ['policy']
-  resources: ['podsecuritypolicies']
-  verbs:     ['use']
-  resourceNames:
-  - restricted
 - apiGroups: ['']
   resources: ['serviceaccounts']
   verbs:     ['use']
