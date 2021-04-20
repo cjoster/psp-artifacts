@@ -146,6 +146,7 @@ if [ -n "${ns}" ]; then
 	testns="$(kubectl get namespaces --no-headers | awk "{if(\$1==\"${ns}\"){print \$1}}")" || die "Could not list namespaces."
 	[ -n "${testns}" -a "${fixup}" -ne 1 ] && die "Namespace \"${ns}\" already exists. Try \"--fixup\" if you want to deploy artifacts to existing namespace."
 	[ -z "${testns}" ] || exists=1
+	nsc="-n ${ns}"
 elif [ "${fixup}" -eq "0" ]; then
 	die "Cannot apply artifacts to current namespace with \"--fixup\"."
 fi
@@ -154,8 +155,8 @@ kubectl get podsecuritypolicy "${psp_name}"  > /dev/null 2>&1 || die "PodSecurit
 
 trap cleanup EXIT
 
-if [ "${exists}" -eq "0" ]; then
-	kubectl create namespace "${ns}" || err "Could not create namespace \"${NS}\"."
+if [ "${exists}" -eq "0" -a -n "${ns}" ]; then
+	kubectl create namespace "${ns}" || err "Could not create namespace \"${ns}\"."
 	ns_created=1
 	nsc="-n ${ns}"
 fi
